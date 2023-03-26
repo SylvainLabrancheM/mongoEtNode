@@ -2,6 +2,7 @@ const { response } = require("express");
 const { v4: uuidv4 } = require("uuid");
 
 const HttpErreur = require("../models/http-erreur");
+const place = require("../models/place");
 const Place = require("../models/place");
 
 let PLACES = [
@@ -23,7 +24,7 @@ const getPlaceById = async (requete, reponse, next) => {
   let place;
   try {
     place = await Place.findById(placeId);
-  } catch {
+  } catch(err) {
     return next(
       new HttpErreur("Erreur lors de la récupération de la place", 500)
     );
@@ -34,12 +35,15 @@ const getPlaceById = async (requete, reponse, next) => {
   reponse.json({ place: place.toObject({getters:true}) });
 };
 
-const getPlacesByUserId = (requete, reponse, next) => {
+const getPlacesByUserId = async (requete, reponse, next) => {
   const utilisateurId = requete.params.utilisateurId;
 
-  const places = PLACES.filter((place) => {
-    return place.createur === utilisateurId;
-  });
+  let places;
+  try{
+   places = await Place.find({createur: utilisateurId});
+  }catch(err){
+    return  next(new HttpErreur("Erreur lors de la récupération des places de l'utilisateur", 500));
+  }
 
   if (!places || places.length === 0) {
     return next(
@@ -47,7 +51,7 @@ const getPlacesByUserId = (requete, reponse, next) => {
     );
   }
 
-  reponse.json({ places });
+  reponse.json({ places: places.map(place => place.toObject({getters: true})) });
 };
 
 const creerPlace = async (requete, reponse, next) => {
@@ -69,22 +73,22 @@ const creerPlace = async (requete, reponse, next) => {
   reponse.status(201).json({ place: nouvellePlace });
 };
 
-const updatePlace = (requete, reponse, next) => {
+const updatePlace = async (requete, reponse, next) => {
   const { titre, description } = requete.body;
   const placeId = requete.params.placeId;
 
-  //Créer une copie de la place, changer la copie puis remplacer l'originale dans le tableau par la copie.
-  //const placeModifiee = PLACE.find(place => place.id === placeId);
-  //L'opérateur ... fait une copie de toutes les pairs clé/valeur, donc de la place elle-même
-  const placeModifiee = { ...PLACES.find((place) => place.id === placeId) };
-  const indicePlace = PLACES.findIndex((place) => place.id === placeId);
+  let place;
 
-  placeModifiee.titre = titre;
-  placeModifiee.description = description;
+  try{
+    place = await Place.findById(placeId);
+    place.titre = titre;
+    place.description = description;
+    await place.save();
+  }catch{
+    return next(new HttpErreur("Erreur lors de la mise à jour de la place", 500));
+  }
 
-  PLACES[indicePlace] = placeModifiee;
-
-  reponse.status(200).json({ place: placeModifiee });
+  reponse.status(200).json({ place: place.toObject({getters: true}) });
 };
 
 const supprimerPlace = (requete, reponse, next) => {
