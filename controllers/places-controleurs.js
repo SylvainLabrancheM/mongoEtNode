@@ -91,9 +91,16 @@ const updatePlace = async (requete, reponse, next) => {
   reponse.status(200).json({ place: place.toObject({getters: true}) });
 };
 
-const supprimerPlace = (requete, reponse, next) => {
+const supprimerPlace = async (requete, reponse, next) => {
   const placeId = requete.params.placeId;
-  PLACES = PLACES.filter((place) => place.id !== placeId);
+  let place;
+  try{
+    place = await Place.findByIdAndRemove(placeId);
+  }catch{
+    return next(new HttpErreur("Erreur lors de la suppression de la place", 500));
+  }
+  
+  
   reponse.status(200).json({ message: "Place supprimée" });
 };
 
