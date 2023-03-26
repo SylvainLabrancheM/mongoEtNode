@@ -2,6 +2,7 @@ const { response } = require("express");
 const {v4 : uuidv4} = require("uuid");
 
 const HttpErreur = require("../models/http-erreur");
+const Place = require("../models/place")
 
 let PLACES = [
     {
@@ -44,21 +45,21 @@ const getPlacesByUserId = (requete, reponse, next) => {
     reponse.json({ places });
   };
 
-  const creerPlace = ((requete, reponse, next) => {
-      const {titre, description, coordonnees, adresse, createur} = requete.body;
-      console.log(requete.body);
-      //équivalent à const titre = requete.body.title
-      const nouvellePlace ={
-        id: uuidv4(),
+  const creerPlace =  (async (requete, reponse, next) =>  {
+      const {titre, description, adresse, createur} = requete.body;
+      const nouvellePlace = new Place({
         titre,
         description,
-        location: coordonnees,
         adresse,
+        image : "https://www.cmontmorency.qc.ca/wp-content/uploads/images/college/Porte_1_juin_2017-1024x683.jpg",
         createur
+      })
+      try{
+        await nouvellePlace.save();
+      }catch (err){
+        const erreur = new HttpErreur("Création de place échouée", 500);
+        return next(erreur);
       }
-
-      PLACES.push(nouvellePlace); //unshift pour ajouter au début
-      // statut 201 lorsque la requête a terminé normalement ET créé quelque chose
       reponse.status(201).json({place: nouvellePlace}); 
   })
 
