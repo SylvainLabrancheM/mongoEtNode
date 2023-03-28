@@ -1,5 +1,5 @@
 const { response } = require("express");
-const { default: mongoose } = require("mongoose");
+const { default: mongoose, mongo } = require("mongoose");
 const { v4: uuidv4 } = require("uuid");
 
 const HttpErreur = require("../models/http-erreur");
@@ -86,7 +86,6 @@ const creerPlace = async (requete, reponse, next) => {
     //Une transaction ne crée pas automatiquement de collection dans mongodb, même si on a un modèle
     //Il faut la créer manuellement dans Atlas ou Compass
   } catch (err) {
-    
     const erreur = new HttpErreur("Création de place échouée", 500);
     return next(erreur);
   }
@@ -117,13 +116,29 @@ const supprimerPlace = async (requete, reponse, next) => {
   const placeId = requete.params.placeId;
   let place;
   try {
-    place = await Place.findByIdAndRemove(placeId);
+    place = await Place.findById(placeId).populate("createur");
   } catch {
     return next(
       new HttpErreur("Erreur lors de la suppression de la place", 500)
     );
   }
+  if(!place){
+    return next(new HttpErreur("Impossible de trouver la place", 404));
+  }
 
+  try{
+    const sess = await mongoose.startSession();
+    sess.startTransaction();
+    
+    await place.remove({session: sess});
+    place.createur.places.pull(place);
+    await place.createur.save({session: sess})
+    await sess.commitTransaction();
+  }catch{
+    return next(
+      new HttpErreur("Erreur lors de la suppression de la place", 500)
+    );
+  }
   reponse.status(200).json({ message: "Place supprimée" });
 };
 
