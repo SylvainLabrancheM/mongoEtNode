@@ -49,13 +49,19 @@ const inscription = async (requete, reponse, next) => {
     reponse.status(201).json({utilisateur:nouvelUtilisateur.toObject({getter:true})});
 };
 
-const connexion = (requete, reponse, next) => {
+const connexion = async (requete, reponse, next) => {
     const {courriel, motDePasse} = requete.body;
 
-    const utilisateur = UTILISATEURS.find(util => util.courriel === courriel);
+    let utilisateurExiste;
 
-    if(!utilisateur || utilisateur.motDePasse !== motDePasse){
-        throw new HttpErreur("Courriel ou mot de passe incorrect", 401);
+    try{
+        utilisateurExiste = await Utilisateur.findOne({courriel:courriel});
+    }catch{
+       return next( new HttpErreur("Connexion échouée, veuillez réessayer plus tard", 500));
+    }
+
+    if(!utilisateurExiste || utilisateurExiste.motDePasse !== motDePasse){
+        return next( new HttpErreur("Courriel ou mot de passe incorrect", 401));
     }
     
     reponse.json({message: "connexion réussie!"});
