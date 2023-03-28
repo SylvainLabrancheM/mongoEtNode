@@ -28,7 +28,7 @@ const getUtilisateurs = async (requete, reponse, next) => {
 };
 
 const inscription = async (requete, reponse, next) => {
-  const { nom, courriel, motDePasse, places } = requete.body;
+  const { nom, courriel, motDePasse } = requete.body;
 
   let utilisateurExiste;
 
@@ -49,7 +49,7 @@ const inscription = async (requete, reponse, next) => {
     courriel,
     image: "image.png",
     motDePasse,
-    places,
+    places: [],
   });
   try {
     await nouvelUtilisateur.save();
