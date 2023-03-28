@@ -1,6 +1,8 @@
 const {v4 : uuidv4} = require("uuid");
 const HttpErreur = require("../models/http-erreur")
 
+const Utilisateur = require("../models/utilisateur");
+
 const UTILISATEURS = [
     {
         id: "u1",
@@ -16,24 +18,35 @@ const getUtilisateurs = (requete, reponse, next) => {
 
 };
 
-const inscription = (requete, reponse, next) => {
-    const {nom, courriel, motDePasse} = requete.body;
+const inscription = async (requete, reponse, next) => {
+    const {nom, courriel, motDePasse, places} = requete.body;
 
-    const courrielExiste = UTILISATEURS.find(u => u.courriel === courriel);
-    if(courrielExiste){
-        throw new HttpErreur("Utilisateur existe déjà", 422);
+    let utilisateurExiste;
+
+    try{
+        utilisateurExiste = await Utilisateur.findOne({courriel:courriel});
+    }catch{
+       return next( new HttpErreur("Échec vérification utilisateur existe", 500));
     }
 
-    const nouvelUtilisateur = {
-        id: uuidv4(),
-        nom, // nom: nom
+    if(utilisateurExiste){
+        return next(new HttpErreur("Utilisateur existe déjà, veuillez vos connecter", 422));
+    }
+
+    let nouvelUtilisateur = new Utilisateur({
+        nom,
         courriel,
-        motDePasse
+        image:"image.png",
+        motDePasse,
+        places
+    })
+    try{
+        await nouvelUtilisateur.save();
+    }catch(err){
+        console.log(err);
+        return next(new HttpErreur("Erreur lors de l'ajout de l'utilisateur", 422));
     }
-
-    UTILISATEURS.push(nouvelUtilisateur);
-
-    reponse.status(201).json(nouvelUtilisateur);
+    reponse.status(201).json({utilisateur:nouvelUtilisateur.toObject({getter:true})});
 };
 
 const connexion = (requete, reponse, next) => {

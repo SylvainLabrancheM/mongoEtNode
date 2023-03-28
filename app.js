@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
+mongoose.set('strictQuery', true);
 
 const placesRoutes = require("./routes/places-routes");
 const utilisateursRoutes = require("./routes/utilisateurs-routes");

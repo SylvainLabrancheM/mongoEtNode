@@ -5,19 +5,7 @@ const HttpErreur = require("../models/http-erreur");
 const place = require("../models/place");
 const Place = require("../models/place");
 
-let PLACES = [
-  {
-    id: "p1",
-    titre: "Empire State Building",
-    description: "Grosse bâtisse!",
-    location: {
-      lat: 40.7484474,
-      lng: -73.9871516,
-    },
-    adresse: "20 W 34th St, New York, NY 10001",
-    createur: "u1",
-  },
-];
+
 
 const getPlaceById = async (requete, reponse, next) => {
   const placeId = requete.params.placeId;
@@ -99,7 +87,6 @@ const supprimerPlace = async (requete, reponse, next) => {
   }catch{
     return next(new HttpErreur("Erreur lors de la suppression de la place", 500));
   }
-  
   
   reponse.status(200).json({ message: "Place supprimée" });
 };
