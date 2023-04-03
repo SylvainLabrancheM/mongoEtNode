@@ -28,7 +28,12 @@ const getPlacesByUserId = async (requete, reponse, next) => {
 
   let places;
   try {
-    places = await Place.find({ createur: utilisateurId });
+   let  utilisateur = await Utilisateur.findById(utilisateurId).populate("places");
+  
+  places =  utilisateur.places;
+  console.log(utilisateur);
+    
+    //places = await Place.find({ createur: utilisateurId });
   } catch (err) {
     return next(
       new HttpErreur(
@@ -64,6 +69,7 @@ const creerPlace = async (requete, reponse, next) => {
 
   try {
     utilisateur = await Utilisateur.findById(createur);
+    
   } catch {
     
     return next(new HttpErreur("Création de place échouée", 500));
@@ -74,15 +80,12 @@ const creerPlace = async (requete, reponse, next) => {
   }
 
   try {
-    const sess = await mongoose.startSession();
-    sess.startTransaction();
+
     
-    await nouvellePlace.save({ session: sess });
+    await nouvellePlace.save();
     //Ce n'est pas le push Javascript, c'est le push de mongoose qui récupe le id de la place et l'ajout au tableau de l'utilisateur
-    console.log(utilisateur);
     utilisateur.places.push(nouvellePlace);
-    await utilisateur.save({session:sess});
-    await sess.commitTransaction();
+    await utilisateur.save();
     //Une transaction ne crée pas automatiquement de collection dans mongodb, même si on a un modèle
     //Il faut la créer manuellement dans Atlas ou Compass
   } catch (err) {
@@ -127,13 +130,12 @@ const supprimerPlace = async (requete, reponse, next) => {
   }
 
   try{
-    const sess = await mongoose.startSession();
-    sess.startTransaction();
+
     
-    await place.remove({session: sess});
+    await place.remove();
     place.createur.places.pull(place);
-    await place.createur.save({session: sess})
-    await sess.commitTransaction();
+    await place.createur.save()
+
   }catch{
     return next(
       new HttpErreur("Erreur lors de la suppression de la place", 500)
